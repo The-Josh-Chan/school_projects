@@ -97,7 +97,7 @@ while(bumpCount < 4){
   runMotorsBack(delta, delta);
   
   Turn_right(turnDelta, t);
-  int reverseTime =  (timeOne - timeTwo) % 2;
+  int reverseTime =  (timeOne - timeTwo) / 2;
   runMotorsBack(delta, delta);
   delay(reverseTime);
   runMotors(0,0);

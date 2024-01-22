@@ -1,0 +1,5 @@
+{
+    "configuration": "cpu=atmega328",
+    "board": "arduino:avr:diecimila",
+    "sketch": "lab2\\M452Lab2Forward\\M452Lab2Forward.ino"
+}
