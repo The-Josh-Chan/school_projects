@@ -84,9 +84,9 @@ while(bumpCount < 4){
     digitalWrite(RED, HIGH);
     // reverse robot
     runMotorsBack(delta, delta);
-    delay(500);
+    delay(250);
     runMotors(0,0);
-    delay(500);
+    delay(250);
     // Turn Function
     Turn_left(turnDelta, t);
     runMotors(0,0);
@@ -95,12 +95,13 @@ while(bumpCount < 4){
 }
 // Turn other direction
   runMotorsBack(delta, delta);
+  delay(1000);
   
-  Turn_right(turnDelta, t);
-  int reverseTime =  (timeOne - timeTwo) / 2;
-  runMotorsBack(delta, delta);
-  delay(reverseTime);
-  runMotors(0,0);
+  // Turn_right(turnDelta, t);
+  // int reverseTime =  (timeOne - timeTwo) / 2;
+  // runMotorsBack(delta, delta);
+  // delay(reverseTime);
+  // runMotors(0,0);
   strcpy(robotState, "done");
   do{//done running
     digitalWrite(GRN, HIGH);
