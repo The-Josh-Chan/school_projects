@@ -25,6 +25,8 @@ int result;          //A to D value from sharp
 int mv;        //millivolt value for sharpvalue
 int reading = 1;     //counter 
 
+int tau = 1;
+
 // Setup Routine
 void setup() 
 {                
@@ -59,14 +61,39 @@ void loop() {
   int count = 0;
   turnOnLED(YLW);
   delay(1000);     // 1 sec pause for setup
+  float previous_mv = 0;
+  float previous_time = millis();
+  // Initiate while loop
+ do {
+  float time_now = millis();
+  result = analogRead(SHARP1);                // read the value of the sharp
+  float current_mv = map(result, 0, 1024, 0, 5000);         // convert value to millivolts
+  float delta_mv = current_mv - previous_mv;
+  float delta_time = time_now - previous_time;
+  float w = min(delta_time / tau, 1);
+  float smooth_mv = previous_mv * (1 - w) + current_mv * w;
 
-  do{
-    result = analogRead(SHARP1);                //read the value of the sharp
-    mv = map(result, 0, 1024, 0, 5000);         //convert value to millivolts
-    Serial.println(mv);
-    count ++;
-    delay(40);
-  }while(count<495 && digitalRead(BUTTON)== LOW);
+  if (smooth_mv < 2600 && smooth_mv > 1750) {
+    turnOnLED(RED);
+    Serial.print(smooth_mv);
+    Serial.print("\t");
+    Serial.println("Too Close");
+  } else if (smooth_mv < 1749 && smooth_mv > 1150) {
+    turnOnLED(GRN);
+    Serial.print(smooth_mv);
+    Serial.print("\t");
+    Serial.println("Distance OK");
+  } else if (smooth_mv < 1149) { // changed from else(mv > 1999)
+    turnOnLED(YLW);
+    Serial.print(smooth_mv);
+    Serial.print("\t");
+    Serial.println("Too Far");
+  } else{
+    Serial.println("What u read??");
+  }
+  previous_mv = current_mv;
+  previous_time = millis();
+} while (digitalRead(BUTTON) == LOW);
 
   //print values to the serial monitor
   //tab format makes it easier to copy and paste values to Excel
@@ -85,7 +112,7 @@ void loop() {
   delay(500);
   do{
     toggleLED(RED);
-  }while(-1);
+  }while(digitalRead(BUTTON)== LOW);
   
   reading = reading + 1;
 }
