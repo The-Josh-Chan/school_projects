@@ -1,0 +1,4 @@
+Load	Engine Speed (rpm)	Torque (lb-f)	Power (hp)	Time for 0.488 L of fuel to leave Burette (s)	Air Flow Rate (CFM)	Air Intake Temperature (F)
+1	1320	210	52	105.41	76	90
+2	2600	230	114	50.26	162	95
+3	4170	230	175	28.53	263	101
