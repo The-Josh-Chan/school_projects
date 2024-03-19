@@ -112,13 +112,35 @@ def set_crank_states(df, bc_consec, bc_bound, tc_consec, tc_bound):
     if len(bc_list) != 0:
         bc_list = set_bc_states(df, bc_list)
 
+# This permutation should never happen with the data that we have
     if (len(bc_list) == 0) & (len(tc_list) != 0):
         bc_list = create_avged_states(tc_list)
         bc_list = set_bc_states(df, bc_list)
+        print("something went wrong, this code should not be called")
 
+# This is the permutation that should be expected
     elif (len(tc_list) == 0) & (len(bc_list) != 0):
         tc_list = create_avged_states(bc_list)
-        tc_list = set_tc_states(df, tc_list)
+        # Since we are taking bottom center as the start of the cycle, start state is state 2, thus tc start should be 3.
+        state = 3
+        add_list = []
+        for i in range(len(tc_list)):
+            index = tc_list[i]
+            if state == 1:
+                df.loc[index, 'crank_state'] = 5
+                df.loc[index, 'rel_crank_ang'] = 720
+                df.loc[index + 1, 'crank_state'] = state
+                df.loc[index + 1, 'rel_crank_ang'] = 0
+                add_list.append(index + 1)
+                state = 3
+                continue
+            if state == 3:
+                df.loc[index, 'crank_state'] = state
+                df.loc[index, 'rel_crank_ang'] = 360
+                state = 1
+                continue
+        tc_list += add_list
+        tc_list.sort()
         
     if (len(bc_list) == 0) & (len(tc_list) == 0):
         print("Could not get consitent voltage readings to find crank angle states.")
