@@ -102,6 +102,7 @@ void loop() {
     delay(2000);
     runMotors(delta, delta);
     delay(run_delay);
+    runMotors(0, 0);
     sweepForLight(delta_turn, turn_90);
     do{
       runMotors(delta, delta);
@@ -114,7 +115,7 @@ void loop() {
     delay(turn_90 * 2);
     runMotors(0,0);
     light_terminated = true;
-  }while(light_terminated != true);
+  }while(light_terminated == false);
 
   toggleLED(RED); 
 }

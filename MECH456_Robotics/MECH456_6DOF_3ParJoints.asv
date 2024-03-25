@@ -112,6 +112,7 @@ disp(J);
 rankJ = rank(J);
 disp("Rank of J");
 disp(rankJ);
+%detJ = simplify(det(J));
 
 % To get the spin matrix, we will use the rotation matrix and its derivitive to get Omega
 r05 =  A05(1:3,1:3);
@@ -126,11 +127,8 @@ disp(spin_matrix);
 
 % Generalized Inverse of Jacobian Matrix
 Jt = J.';
-disp("Determinant of Jacobian Matrix")
-detJ = simplify(det(Jt * J));
-disp(detJ)
-disp("Generalized Inverse of Jacobian Matrix");
 GIJ = simplify((inv(Jt*J))*Jt);
+disp("Generalized Inverse of Jacobian Matrix");
 disp(GIJ);
 
 
