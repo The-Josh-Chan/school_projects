@@ -21,6 +21,17 @@
 close all
 clc
 
+function penroseCheck(check)
+    % This function takes a variable check1 and prints a message 
+    % based on the value of check1.
+    simp = simplify(check);
+    if simp == 0
+        disp('Passed');
+    else 
+        disp('Failed');
+    end
+end
+
 % Define symbolic variables as real values:
 % Joint Displacements % Theta1 is 0 since joint 1 is a prismatic joint
 t1 = 0; t2 = sym('t2','real'); t3 = sym('t3','real'); t4 = sym('t4','real'); t5 = sym('t5','real'); 
@@ -102,6 +113,8 @@ P05_t5 = simplify(diff(P05,t5));  % Partial derivative of P06 with respect to t4
 % Construct Jacobian matrix and its determinant, check its rank
 Jac = [zero1 z01 z02 z03 z04; P05_s P05_t2 P05_t3 P05_t4 P05_t5];
 
+
+
 % Calculate A_05 and J matrix when s and k are zero
 %s = 0.0;
 A05_compact = simplify(eval(A05));
@@ -112,6 +125,14 @@ disp(J);
 rankJ = rank(J);
 disp("Rank of J");
 disp(rankJ);
+
+% Forward Velocity Analysis
+sdot = sym('sdot', 'real'); 
+t2dot = sym('t2dot', 'real'); t3dot = sym('t3dot', 'real'); t4dot = sym('t4dot', 'real'); t5dot = sym('t5dot', 'real'); 
+joint_divs = [sdot;t2dot;t3dot;t4dot;t5dot];
+V = J * joint_divs;
+disp("FVA Analysis: Components of EE velocity")
+disp(V)
 
 % To get the spin matrix, we will use the rotation matrix and its derivitive to get Omega
 r05 =  A05(1:3,1:3);
@@ -124,13 +145,68 @@ spin_matrix = (rdot*r05.');
 disp("Spin Matrix using Spin Matrix Method with rotation matricies");
 disp(spin_matrix);
 
-% Generalized Inverse of Jacobian Matrix
+% IVA
+% Generalized Inverse of Jacobian Matrix minimum 2-norm Joint Velocity
+% Vector
 Jt = J.';
 disp("Determinant of Jacobian Matrix")
 detJ = simplify(det(Jt * J));
 disp(detJ)
-disp("Generalized Inverse of Jacobian Matrix");
-GIJ = simplify((inv(Jt*J))*Jt);
-disp(GIJ);
+Jgi = simplify((inv(Jt*J))*Jt);
+qdot_2norm = Jgi * V; 
+disp("Generalized Inverse of Jacobian Matrix (2-norm joint velocity vector");
+disp(qdot_2norm);
 
+% IVA using n independent end effector motuions
+%use first 5 rows of the jacobian matrix (p-joint, t2, t3, t4, t5)
+J_2 = J(1:5,1:5);
+V_f = V(1:5);
+qdot_5x5 = pinv(J_2) * V_f;
+disp("Generalized Inverse of Jacobian Matrix (5x5 independant");
+disp(simplify(qdot_5x5));
+
+%Penrose Conditions
+disp("Checking Penrose Conditions")
+check1 = J*Jgi*J - J;
+disp("Penrose Condition 1")
+penroseCheck(check1);
+
+check2 = Jgi*J*Jgi - Jgi;
+disp("Penrose Condition 2")
+penroseCheck(check2);
+
+check3 = (J*Jgi).' - J*Jgi;
+disp("Penrose Condition 3")
+penroseCheck(check3);
+
+check4 = (Jgi*J).' - Jgi*J;
+disp("Penrose Condition 4")
+penroseCheck(check4);
+    
+%Compliance Matrix
+%Stiffness matrix - for compliance matrix calculation
+k1 = sym('k1','real'); k2 = sym('k2','real'); k3 = sym('k3','real'); k4 = sym('k4','real'); k5 = sym('k5','real'); k6 = sym('k6','real');
+
+k = [k1 0 0 0 0;
+     0 k2 0 0 0;
+     0 0 k3 0 0;
+     0 0 0 k4 0;
+     0 0 0 0 k5];
+
+disp("Stiffness Matrix");
+disp(k);
+
+%Compliance Matrix --> [C] = [J][K]^-1[J]^T
+k_inv = inv(k);
+[C] = (J*k_inv)*Jt;
+disp(C)
+
+%End Effector Stiffness Matrix
+[k_ee] = inv(C);
+
+size(C);
+rank(C);
+
+% Write these as disp statements with titles so the TA knows what they're
+% looking at when they print. 
 

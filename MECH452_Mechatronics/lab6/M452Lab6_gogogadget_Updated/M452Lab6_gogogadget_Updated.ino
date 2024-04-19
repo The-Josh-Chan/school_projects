@@ -28,11 +28,15 @@ int LIGHT = A0; // photoresistor pin
 // recommended initial values 
 int delta  = 25;   // 25 as default for speed for speed test
 int HYS    = 50;   // 50 as default for hysterisis
-int delta_turn = 10; // 10 as turning speed for motors    
+int delta_turn = 25; // 10 as turning speed for motors    
 
 // adjust stop speed and target distance as appropriate
 int WALL = 700;       // 700 (40cm) for corridor, 1200 (20cm) for wall 
 int STOP_SPEED = 147;  // 147 as default, change to match that in Lab #4
+
+//delay variables
+int start_dist_delay = 0;
+int fwd_delay = 0;
 
 // Global Variables
 float result;
@@ -67,27 +71,11 @@ void setup() {
     toggleLED(GRN);         //motors stopped, Green LED flashing
   } while(digitalRead(BUTTON_B)== HIGH);
 
-  Serial.println("Distance");
   do  {
-  toggleLED(YLW);
-    if (digitalRead(BUTTON_A) == LOW){
-      start_distance = 2;
-      Serial.println("Set start distance to 2m");
-      break;
-    }
-    else if (digitalRead(BUTTON_B) == LOW){
-      HYS = 50;
-      Serial.println("Set delta = 25");
-      break;
-    }
-    
-    else if (digitalRead(BUTTON_C) == LOW){
-      start_distance = 3;
-      run_delay = run_delay * 1.5;
-      Serial.println("Set start distance to 3m");
-      break;
-    }
-  } while(-1);
+    toggleLED(YLW);
+    Serial.println("Ready to go");
+  } while(digitalRead(BUTTON_B) == LOW);
+  
   light_terminated = false;
   sensor1 = map(analogRead(SHARP1),0,1023,0,5000); // initialize sensor
   Serial.println("Program Running. Press bumper to stop");
@@ -95,29 +83,42 @@ void setup() {
 
 // Main Routine
 void loop() {
+  delay (1000);
   do{
-    int turn_90 = 2000;
-    sweepForLight(delta_turn, turn_90); // input speed for turn and time for a 90 deg turn
+    int turn_90 = 1200;
+    runMotors(10,10);
+    delay(50);
+    start_dist_delay=sweepForLight(delta_turn, turn_90);
+    fwd_delay=start_dist(start_dist_delay);
     runMotors(0,0);
     delay(2000);
-    runMotors(delta, delta);
-    delay(run_delay);
-    runMotors(0, 0);
-    sweepForLight(delta_turn, turn_90);
+    turn_90 = 900;
+    runMotors(delta,delta);
+    delay(fwd_delay);
+    runMotors(0,0);
+    start_dist_delay=sweepForLight(delta_turn, turn_90);
+    
     do{
       runMotors(delta, delta);
-    }while(map(analogRead(SHARP1),0,1023,0,5000) < WALL); // Wall should be set to 40cm away from the wall behind the light
-    // Stop Motors once light is reach
+    }while((map(analogRead(LIGHT), 0, 1024, 0, 5000)<3810) or (analogRead(SHARP1) > 900));// Stop Motors once light is reach
+    //while(map(analogRead(SHARP1),0,1023,0,5000) < WALL); // Wall should be set to 40cm away from the wall behind the light
     runMotors(0,0);
-    sweepForLight(delta_turn, turn_90); // Final sweep to center
+    delay(1000);
     // Turn 180 deg
     runMotors(-delta_turn, delta_turn);
-    delay(turn_90 * 2);
+    delay(1450);
     runMotors(0,0);
+    runMotors(-delta,-delta);
+    delay(400);
+    runMotors(0,0);
+    delay(1000);
     light_terminated = true;
-  }while(light_terminated == false);
-
-  toggleLED(RED); 
+  }while(light_terminated != true);
+  
+  do{
+    toggleLED(RED);
+    runMotors(0,0);
+  }while(light_terminated = true);
 }
 
 //**********FUNCTIONS (subroutines)******************
@@ -132,7 +133,8 @@ void runMotors(int delta_L, int delta_R){
   }
 }
 
-void sweepForLight(int deltaTurn, int turn_time){
+int sweepForLight(int deltaTurn, int turn_time){
+  delay(50);
   runMotors(-deltaTurn, deltaTurn);
   delay(turn_time); // Set time for desired turn length
   runMotors(0,0); // Stop initial turn to left
@@ -140,30 +142,44 @@ void sweepForLight(int deltaTurn, int turn_time){
   result = analogRead(LIGHT);
   mvresult = map(result, 0, 1024, 0, 5000);
   int max_light = mvresult;
-  int increment_count = 0;
-  for(int i = 0; i<36; i++){
+//  int increment_count = 0;
+  for(int i = 0; i<60; i++){
     runMotors(deltaTurn, -deltaTurn);
     delay(turn_time/18);
     runMotors(0,0);
-    delay(turn_time/18);
+    delay(100);
     // Read current light situation
     result = analogRead(LIGHT);
     mvresult = map(result, 0, 1024, 0, 5000);
     if (mvresult>max_light){
         max_light=mvresult;
-        increment_count += 1;
     }
   }
-  int found_light = 36-increment_count;
-  for(int j = 0; j < found_light; j ++){
-    runMotors(-deltaTurn, deltaTurn);
-    delay(turn_time/18);
-    runMotors(0,0);
-    delay(turn_time/18);
-    }
+  runMotors(0,0);
+  delay(1000);
+    result = analogRead(LIGHT);
+    int current_read = map(result, 0, 1024, 0, 5000);
+  do{
+    runMotors(-17, 17);
+    result = analogRead(LIGHT);
+    current_read = map(result, 0, 1024, 0, 5000);
+  }while(current_read < max_light-9);
+  
   // Turn Motors off for next step after sweeping for light
   runMotors(0,0);
   delay(2000);
+  return max_light;
+}
+
+int start_dist(int max_light){
+  int fwd_delay=0;
+  if (max_light > 1750){//if true starting dist is 2m
+    fwd_delay = 900;//calibrate this
+  }
+  else{//if false starting dist is 3m
+    fwd_delay = 2300;//calibrate this
+  }
+  return fwd_delay;
 }
 
 // single motor pulsewidth command
